@@ -74,25 +74,26 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-    """
+    """Return a numeric score and list of matching reasons for a song against user preferences."""
     score = 0.0
     reasons = []
 
     if user_prefs.get("genre") and song["genre"].lower() == user_prefs["genre"].lower():
-        score += 2.0
-        reasons.append("genre match (+2.0)")
-
-    if user_prefs.get("mood") and song["mood"].lower() == user_prefs["mood"].lower():
         score += 1.0
-        reasons.append("mood match (+1.0)")
+        reasons.append("genre match (+1.0)")
+
+    if user_prefs.get("mood"):
+        if song["mood"].lower() == user_prefs["mood"].lower():
+            score += 1.0
+            reasons.append("mood match (+1.0)")
+        else:
+            score -= 0.5
+            reasons.append("mood mismatch (-0.5)")
 
     if user_prefs.get("energy") is not None:
         if abs(song["energy"] - user_prefs["energy"]) < 0.15:
-            score += 1.0
-            reasons.append("energy match (+1.0)")
+            score += 2.0
+            reasons.append("energy match (+2.0)")
 
     if user_prefs.get("valence") is not None:
         if abs(song["valence"] - user_prefs["valence"]) < 0.2:
@@ -117,10 +118,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     return (score, reasons)
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
+    """Score all songs against user preferences and return the top k matches sorted by score."""
     scored = []
     for song in songs:
         score, reasons = score_song(user_prefs, song)

@@ -13,6 +13,13 @@ Your goal is to:
 
 Replace this paragraph with your own summary of what your version does.
 
+![Music Recommender Screenshot](musicrec.png)
+![Music Recommender Screenshot](output1.png)
+![Music Recommender Screenshot](output2.png)
+![Music Recommender Screenshot](output3.png)
+
+
+
 ---
 
 ## How The System Works
@@ -277,6 +284,4 @@ A few sentences about what you learned:
 
 
 
-## !! SCREENSHOT!!
-![Music Recommender Screenshot](musicrec.png)
 
