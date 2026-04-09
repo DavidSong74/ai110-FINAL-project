@@ -9,3 +9,11 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
 9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
 10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
+11,Sunset on Kingston Pier,Marley Tide,reggae,nostalgic,0.64,92,0.72,0.78,0.36
+12,Luna de Barrio,Rosa Fuego,latin,euphoric,0.88,126,0.81,0.90,0.14
+13,Glass Cathedral,Aria North,classical,cinematic,0.29,68,0.47,0.22,0.95
+14,Iron Horizon,Black Volt,metal,rebellious,0.96,172,0.39,0.58,0.03
+15,Golden Heatwave,Kito Pulse,afrobeats,dreamy,0.84,108,0.86,0.87,0.19
+16,Pine and Ember,Willow Freight,folk,melancholic,0.41,76,0.44,0.49,0.82
+17,Neon Courtyard,Zeta District,house,euphoric,0.91,124,0.79,0.93,0.07
+18,Midnight Brassline,Delta Rue,blues,nostalgic,0.52,84,0.55,0.61,0.67

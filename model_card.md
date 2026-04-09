@@ -3,7 +3,7 @@
 ## 1. Model Name  
 
 Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+- GoodVIBES
 
 ---
 
@@ -14,8 +14,11 @@ Describe what your recommender is designed to do and who it is for.
 Prompts:  
 
 - What kind of recommendations does it generate  
+    - it will ask for which situation the user is in and make a tailored playlist from that
 - What assumptions does it make about the user  
+    - That the user listens to similar music as their music history shows
 - Is this for real users or classroom exploration  
+    - Real
 
 ---
 
@@ -26,7 +29,9 @@ Explain your scoring approach in simple language.
 Prompts:  
 
 - What features of each song are used (genre, energy, mood, etc.)  
+    - Genre, energy, mood, language, lyrical VS instrumental
 - What user preferences are considered  
+    - Whether their current context warrants a different genre
 - How does the model turn those into a score  
 - What changes did you make from the starter logic  
 
@@ -41,9 +46,13 @@ Describe the dataset the model uses.
 Prompts:  
 
 - How many songs are in the catalog  
+    - at least to last 3 hours
 - What genres or moods are represented  
+    - all genres that the user previosly touched on
 - Did you add or remove data  
+    - stay same?
 - Are there parts of musical taste missing in the dataset  
+    - 
 
 ---
 
@@ -54,6 +63,7 @@ Where does your system seem to work well
 Prompts:  
 
 - User types for which it gives reasonable results  
+    - 
 - Any patterns you think your scoring captures correctly  
 - Cases where the recommendations matched your intuition  
 

@@ -17,17 +17,83 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+This recommender is built around the idea of matching a user to a musical vibe, not just finding the most popular songs.
 
-Some prompts to answer:
+Each Song includes:
+- Genre and mood as categorical vibe signals.
+- Energy, tempo, acousticness, danceability, and valence as numeric vibe signals.
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+Each UserProfile stores:
+- Preferred genre and mood.
+- Target values for key numeric features (especially energy, then tempo and acousticness).
 
-You can include a simple diagram or bullet list if helpful.
+The system uses one scoring formula and one ranking step.
+
+### Finalized Algorithm Recipe
+
+1. For each song, start with a score of 0.
+2. Add categorical match points:
+  - Mood match: +25 if `song.mood == user.favorite_mood`
+  - Genre match: +20 if `song.genre == user.favorite_genre`
+3. Add energy closeness (max 30 points):
+  - Compute energy similarity with distance-based scoring
+  $$s = 1 - \frac{|x - p|}{\text{range}}$$
+  where $x$ is song energy and $p$ is target energy.
+  - Add $30 \times s$ to the total score.
+4. Add acoustic preference points (max 15 points):
+  - Reward songs whose acousticness matches whether the user likes acoustic tracks.
+5. Add other vibe-signal closeness (max 10 points total):
+  - Use tempo, valence, and danceability similarity and combine them into up to 10 points.
+6. Repeat for all songs.
+7. Sort all songs by total score, highest to lowest.
+8. Return top $k$ songs.
+
+### Why These Weights
+
+- Mood is slightly stronger than genre (25 vs 20, about 1.25x) to keep recommendations vibe-first.
+- Energy has the biggest numeric weight (30) because it strongly shapes how a song feels in practice.
+- Acoustic preference and other numeric signals refine ties and improve personalization.
+
+### Implementation Rules (Final)
+
+- Normalize categorical text before matching: trim spaces and compare in lowercase.
+- Use fixed feature ranges for similarity:
+  - energy, acousticness, valence, danceability: range = 1.0
+  - tempo: range = 200.0 (assuming practical tempo window of 40 to 240 BPM)
+- Compute all distance-based similarities as:
+  $$s = 1 - \frac{|x - p|}{\text{range}}$$
+  then clamp $s$ to $[0, 1]$.
+- Split the 10 "other vibe" points as:
+  - tempo closeness: 4 points
+  - valence closeness: 3 points
+  - danceability closeness: 3 points
+- Acoustic preference scoring (15 points):
+  - If user likes acoustic songs, add $15 \times acousticness$.
+  - If user prefers non-acoustic songs, add $15 \times (1 - acousticness)$.
+- Clamp final total score to $[0, 100]$.
+- Tie-breaking for equal scores:
+  1. Higher mood contribution
+  2. Higher energy similarity contribution
+  3. Lower song id (stable deterministic fallback)
+- Edge cases:
+  - Empty catalog: return empty list
+  - $k \le 0$: return empty list
+  - $k > n$: return all $n$ songs sorted
+  - Missing or invalid numeric values: skip song or default safely, and document which behavior you choose in code comments
+- Explanation format should include:
+  - total score
+  - whether mood and genre matched
+  - top 2 to 3 strongest contributing features
+  - one sentence on why the song ranked where it did
+
+Why this design:
+- Scoring tells us how well one song matches the user's vibe.
+- Ranking turns many scored songs into a final recommendation list.
+- Separating these steps keeps the model simple, explainable, and easy to improve.
+
+Potential bias note:
+- This setup may over-reward common moods/genres in the dataset and under-recommend less represented styles.
+- Because mood and energy are weighted heavily, songs that are genre-diverse but mood-adjacent may appear more often than niche genre matches.
 
 ---
 
