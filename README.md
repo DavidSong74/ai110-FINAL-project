@@ -1,287 +1,213 @@
-# 🎵 Music Recommender Simulation
+# GoodVIBES 2.0 — AI Music Recommender
 
-## Project Summary THIS IS REALL
-
-In this project you will build and explain a small music recommender system.
-
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
-
-![Music Recommender Screenshot](musicrec.png)
-![Music Recommender Screenshot](output1.png)
-![Music Recommender Screenshot](output2.png)
-![Music Recommender Screenshot](output3.png)
-
-
+A rule-based music recommender **extended with a Gemini-powered explanation layer**. Given a user's mood, genre, and energy preferences, the system scores every song in its catalog, ranks them, and produces a natural-language explanation for each recommendation.
 
 ---
 
-## How The System Works
+## Base Project
 
-This recommender is built around the idea of matching a user to a musical vibe, not just finding the most popular songs.
+This project extends the **Module 3 Music Recommender Simulation** ([DavidSong74/ai110-module3show-musicrecommendersimulation-starter](https://github.com/DavidSong74/ai110-module3show-musicrecommendersimulation-starter)).
 
-Each Song includes:
-- Genre and mood as categorical vibe signals.
-- Energy, tempo, acousticness, danceability, and valence as numeric vibe signals.
+The original system represented songs and user taste profiles as structured data, then used a weighted scoring formula to rank songs against a user's preferred genre, mood, and energy level. It was built to demonstrate how a simple algorithm can produce surprisingly sensible recommendations without any machine learning, and to surface the failure modes that come with hard-coded rules and small catalogs.
 
-Each UserProfile stores:
-- Preferred genre and mood.
-- Target values for key numeric features (especially energy, then tempo and acousticness).
-
-The system uses one scoring formula and one ranking step.
-
-### Finalized Algorithm Recipe
-
-1. For each song, start with a score of 0.
-2. Add categorical match points:
-  - Mood match: +25 if `song.mood == user.favorite_mood`
-  - Genre match: +20 if `song.genre == user.favorite_genre`
-3. Add energy closeness (max 30 points):
-  - Compute energy similarity with distance-based scoring
-  $$s = 1 - \frac{|x - p|}{\text{range}}$$
-  where $x$ is song energy and $p$ is target energy.
-  - Add $30 \times s$ to the total score.
-4. Add acoustic preference points (max 15 points):
-  - Reward songs whose acousticness matches whether the user likes acoustic tracks.
-5. Add other vibe-signal closeness (max 10 points total):
-  - Use tempo, valence, and danceability similarity and combine them into up to 10 points.
-6. Repeat for all songs.
-7. Sort all songs by total score, highest to lowest.
-8. Return top $k$ songs.
-
-### Why These Weights
-
-- Mood is slightly stronger than genre (25 vs 20, about 1.25x) to keep recommendations vibe-first.
-- Energy has the biggest numeric weight (30) because it strongly shapes how a song feels in practice.
-- Acoustic preference and other numeric signals refine ties and improve personalization.
-
-### Implementation Rules (Final)
-
-- Normalize categorical text before matching: trim spaces and compare in lowercase.
-- Use fixed feature ranges for similarity:
-  - energy, acousticness, valence, danceability: range = 1.0
-  - tempo: range = 200.0 (assuming practical tempo window of 40 to 240 BPM)
-- Compute all distance-based similarities as:
-  $$s = 1 - \frac{|x - p|}{\text{range}}$$
-  then clamp $s$ to $[0, 1]$.
-- Split the 10 "other vibe" points as:
-  - tempo closeness: 4 points
-  - valence closeness: 3 points
-  - danceability closeness: 3 points
-- Acoustic preference scoring (15 points):
-  - If user likes acoustic songs, add $15 \times acousticness$.
-  - If user prefers non-acoustic songs, add $15 \times (1 - acousticness)$.
-- Clamp final total score to $[0, 100]$.
-- Tie-breaking for equal scores:
-  1. Higher mood contribution
-  2. Higher energy similarity contribution
-  3. Lower song id (stable deterministic fallback)
-- Edge cases:
-  - Empty catalog: return empty list
-  - $k \le 0$: return empty list
-  - $k > n$: return all $n$ songs sorted
-  - Missing or invalid numeric values: skip song or default safely, and document which behavior you choose in code comments
-- Explanation format should include:
-  - total score 
-  - whether mood and genre matched
-  - top 2 to 3 strongest contributing features
-  - one sentence on why the song ranked where it did
-
-Why this design:
-- Scoring tells us how well one song matches the user's vibe.
-- Ranking turns many scored songs into a final recommendation list.
-- Separating these steps keeps the model simple, explainable, and easy to improve.
-
-Potential bias note:
-- This setup may over-reward common moods/genres in the dataset and under-recommend less represented styles.
-- Because mood and energy are weighted heavily, songs that are genre-diverse but mood-adjacent may appear more often than niche genre matches.
+This final project keeps that scoring logic intact and adds a Gemini API call after ranking — so instead of showing users a raw list of feature matches, the system now explains each recommendation in plain language.
 
 ---
 
-## Getting Started
+## Architecture Overview
 
-### Setup
+The full data flow is documented in [assets/system_diagram.md](assets/system_diagram.md). The short version:
 
-1. Create a virtual environment (optional but recommended):
+A user profile (genre, mood, energy, tempo, etc.) enters the system alongside the 18-song CSV catalog. The scoring engine runs each song through a weighted formula and hands the top-k results to the Gemini API, which reads the score breakdown and returns a 1-2 sentence explanation. Everything gets logged to `logs/recommender.log`. A separate validation test asks Gemini to verify its own explanations against the score data and flags any contradictions.
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate      # Mac or Linux
-   .venv\Scripts\activate         # Windows
+Three places in the pipeline involve checking rather than generating: the unit test suite validates the scoring logic, the AI validation test checks explanation truthfulness, and the log file gives a human-readable audit trail for every API call.
 
-2. Install dependencies
+---
+
+## Setup
+
+**Prerequisites:** Python 3.10+, a Google AI Studio API key (free tier at [aistudio.google.com](https://aistudio.google.com)).
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/DavidSong74/ai110-FINAL-project-1.git
+cd ai110-FINAL-project-1
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate        # Mac / Linux
+.venv\Scripts\activate           # Windows
+
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Add your Gemini API key
+echo "GEMINI_API_KEY=your_key_here" > .env
 ```
 
-3. Run the app:
+**Run the recommender:**
 
 ```bash
 python -m src.main
 ```
 
-### Running Tests
-
-Run the starter tests with:
+**Run the test suite:**
 
 ```bash
 pytest
 ```
 
-You can add more tests in `tests/test_recommender.py`.
+The test suite includes unit tests for the scoring logic and an AI validation test that checks whether Gemini's explanations are consistent with the actual score breakdown.
 
 ---
 
-## Experiments You Tried
+## Sample Interactions
 
-Use this section to document the experiments you ran. For example:
+### 1. High-Energy Pop
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Input profile:**
+```
+genre: pop | mood: happy | energy: 0.9 | tempo: 128 BPM
+valence: 0.8 | danceability: 0.85 | acousticness: 0.1
+```
+
+**Output:**
+```
+#1  Sunrise City by Neon Echo
+    Genre: pop  |  Mood: happy
+    Score: 6.0
+    Why:  "Sunrise City matches your profile on every axis — pop genre,
+           happy mood, and energy right at your target. The tempo sits
+           10 BPM away from your preference, which is close enough to
+           feel natural."
+
+#2  Gym Hero by Max Pulse
+    Genre: pop  |  Mood: intense
+    Score: 5.5
+    Why:  "Gym Hero scores well on energy and danceability, but its mood
+           is intense rather than happy, so it took a small penalty.
+           If you want a harder-hitting pop track, this is the one."
+```
+
+The top result here scores a perfect 6.0 because every feature matched within threshold. The mood penalty on Gym Hero shows up correctly in the explanation.
 
 ---
 
-## Limitations and Risks
+### 2. Chill Lofi
 
-Summarize some limitations of your recommender.
+**Input profile:**
+```
+genre: lofi | mood: chill | energy: 0.3 | tempo: 85 BPM
+valence: 0.4 | danceability: 0.4 | acousticness: 0.7
+```
 
-Examples:
+**Output:**
+```
+#1  Library Rain by Paper Lanterns
+    Genre: lofi  |  Mood: chill
+    Score: 5.5
+    Why:  "Library Rain fits a low-energy, acoustic listening session well.
+           The mood and genre match, energy is close to your target, and
+           the high acousticness lines up with your preference. Valence
+           runs a bit high, but it's a minor gap."
 
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
+#2  Midnight Coding by LoRoom
+    Genre: lofi  |  Mood: chill
+    Score: 5.5
+    Why:  "Midnight Coding ties Library Rain on score. It matches mood and
+           genre, sits close to your energy target, and has a similar
+           acoustic feel. Danceability is slightly above your preference,
+           but not enough to matter much."
+```
 
-You will go deeper on this in your model card.
+Two songs tie at 5.5 here. The explanations do the work of distinguishing them rather than leaving the user to decode a raw score.
+
+---
+
+### 3. Mellow Metal Paradox (edge case)
+
+**Input profile:**
+```
+genre: metal | mood: relaxed | energy: 0.2 | tempo: 70 BPM
+acousticness: 0.9 | valence: 0.8
+```
+
+**Output:**
+```
+#1  Iron Horizon by Black Volt
+    Genre: metal  |  Mood: rebellious
+    Score: 0.5
+    Why:  "Iron Horizon is the only metal song in the catalog, so genre
+           gives it a point. But every other feature is the opposite of
+           what you described — the energy is 0.96, the tempo is 172 BPM,
+           and it is far from acoustic. This is a catalog gap, not a real
+           match."
+```
+
+This is the most honest output the system produces. Genre forced a result, but the explanation correctly flags that nothing else aligned. A real recommender would surface this as a "no good matches found" state rather than returning a 0.5-score song.
+
+---
+
+## Design Decisions
+
+The scoring formula uses hard thresholds rather than continuous distance functions. Energy must be within 0.15, tempo within 20 BPM, and so on. This was a deliberate choice for transparency: every threshold is visible in the code, and the explanation text can reference exact pass/fail decisions. The tradeoff is a cliff effect — a song 0.14 away from the energy target scores the same as a perfect match, while a song 0.15 away scores nothing. A smoother penalty curve would be more accurate but harder to explain to a non-technical user.
+
+Mood mismatch subtracts 0.5 rather than scoring zero. The original starter code simply gave zero points for a mood miss. That let high-energy songs dominate results for users who asked for a completely different mood, because genre and energy matches swamped the absence of mood credit. The penalty flips mood from a "nice to have" into a real downside, which produces more intuitive rankings.
+
+The Gemini explanation call happens after ranking, not during scoring. This keeps the two systems cleanly separated — if the API is unavailable, the recommender falls back to the raw reasons string and keeps running. Mixing the LLM into the scoring step would have made the system harder to test and harder to debug when something went wrong.
+
+Gemini Flash was chosen over more capable models because the task is short and structured. The prompt already contains the score breakdown; Gemini's job is to restate it in natural language, not to reason over ambiguous data. A smaller, faster model handles this well and keeps API costs within the free tier.
+
+---
+
+## Testing Summary
+
+Eleven user profiles were tested: four standard cases and seven adversarial ones designed to find the formula's edges.
+
+The standard profiles (High-Energy Pop, Chill Lofi, Deep Intense Rock) all produced results that matched human intuition. The top-ranked songs genuinely fit the described vibe, and changing one input meaningfully changed the output. That was the baseline confirmation that the formula works.
+
+The adversarial profiles found four concrete problems. The "calm vs chill" mood mismatch showed that exact string matching silently ignores user intent — a user who types "calm" gets penalized on every lofi song because the dataset uses "chill." The Exact Boundary Energy test confirmed the cliff: a song with energy diff = 0.15 scores zero, not the partial credit a human would expect. The Impossible Tempo profile (300 BPM) revealed that tempo contributed nothing to any result, which is correct behavior but worth flagging because a real system should warn the user rather than silently ignoring their input. The Mellow Metal Paradox showed that genre matching can surface a single 0.5-score song when no real match exists, which feels like a false recommendation.
+
+The AI validation test ran Gemini's explanations back through a verification prompt and measured how often the explanation accurately reflected the score breakdown. Two of 55 explanations failed: one for the Mellow Metal Paradox profile (the explanation overstated the match quality) and one for the Mood Mismatch profile (the explanation described a mood alignment that did not occur in the score). Both failures pointed to cases where Gemini was working from a score that itself was borderline — the LLM was not hallucinating so much as inheriting ambiguity from the scoring layer.
+
+What worked well was the separation between the rule-based scorer and the AI explainer. When the explainer made a mistake, the log showed the score breakdown alongside the explanation, which made it straightforward to identify whether the problem was in the prompt, the score, or the model output. That separation also made writing targeted tests much easier.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+Building this taught me that a system can follow its rules correctly and still produce wrong answers. When the Contradictory Energy+Mood profile returned upbeat pop songs for a user who asked for sad music, the algorithm was doing exactly what it was designed to do. The rules were the problem, not a bug. That distinction matters a lot when you're trying to improve something — debugging code and revising a scoring formula are different activities, and confusing them wastes time.
 
-[**Model Card**](model_card.md)
+The Gemini integration added a layer I did not fully anticipate: the explanation quality is bounded by the score quality. When the score is wrong (like giving Iron Horizon a 0.5 for a relaxed listener), the explanation either faithfully describes a bad recommendation or drifts toward making it sound better than it is. The validation test caught two cases of the second kind, which is exactly what evaluation should do. But it also meant that fixing the explanation required fixing the score first, not tweaking the prompt.
 
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
-
+The project also surfaced something about the gap between "it works" and "it's trustworthy." The recommender worked from the first run — it returned songs in a reasonable order. But it took eleven profiles and a separate validation pass to understand where it would fail on real users. Most of those failures were silent: a user who typed "calm" instead of "chill" would see results with no indication that their mood preference was ignored. Building the logging and the explanation layer made invisible failures visible. That feels like the actual engineering work, not the feature.
 
 ---
 
-## 7. `model_card_template.md`
+## Files
 
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> VibeFinder 1.0
-
----
-
-## 2. Intended Use
-
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
+```
+ai110-FINAL-project-1/
+├── data/
+│   └── songs.csv              # 18-song catalog with audio features
+├── src/
+│   ├── main.py                # CLI runner, 11 test profiles
+│   └── recommender.py         # load_songs, score_song, recommend_songs, Gemini integration
+├── tests/
+│   └── test_recommender.py    # Unit tests + AI explanation validation
+├── assets/
+│   └── system_diagram.md      # Full architecture diagram
+├── logs/
+│   └── recommender.log        # Audit trail for all runs and API calls
+├── model_card.md              # Algorithm details, bias analysis, evaluation
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## 3. How It Works (Short Explanation)
+## Demo
 
-Describe your scoring logic in plain language.
+[Loom walkthrough — link to be added]
 
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
-
----
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
-
-
-
-
+The walkthrough shows the system running all 11 profiles end-to-end, including the edge cases, and demonstrates how the Gemini explanation layer changes the output compared to the raw reasons string.
