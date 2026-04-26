@@ -226,9 +226,7 @@ ai110-FINAL-project-1/
 
 ## Demo
 
-[Loom walkthrough — link] 
-
-https://www.loom.com/share/f26e7deb84214472ad6b69734933ffb2
+[Loom walkthrough](https://www.loom.com/share/f26e7deb84214472ad6b69734933ffb2)
 
 The walkthrough shows the system running all 11 profiles end-to-end, including the edge cases, and demonstrates how the Gemini explanation layer changes the output compared to the raw reasons string.
 
