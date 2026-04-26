@@ -13,6 +13,7 @@ Exports:
 import csv
 import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
@@ -333,8 +334,12 @@ def recommend_songs(
     scored.sort(key=lambda x: x[1], reverse=True)
 
     results: List[Tuple[Dict, float, str]] = []
-    for song, score, reasons in scored[:k]:
+    for i, (song, score, reasons) in enumerate(scored[:k]):
         explanation = generate_explanation(song, user_prefs, score, reasons)
         results.append((song, score, explanation))
+        # Stay within the free-tier limit of 15 requests/minute.
+        # Only pause when the API is actually available and there are more calls coming.
+        if _gemini_client is not None and i < len(scored[:k]) - 1:
+            time.sleep(4)
 
     return results
