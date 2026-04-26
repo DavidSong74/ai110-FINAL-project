@@ -2,9 +2,9 @@
 
 ## 1. Model Name
 
-**GoodVIBES 1.0**
+**GoodVIBES 2.0**
 
-A context-aware music recommender that matches songs to a user's current mood, energy level, and genre preference.
+A rule-based music recommender with a Gemini explanation layer. The scoring engine matches songs to a user's mood, energy, genre, and tempo preferences; Gemini writes a plain-English explanation for each ranked result.
 
 ---
 

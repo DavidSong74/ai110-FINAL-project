@@ -226,6 +226,16 @@ ai110-FINAL-project-1/
 
 ## Demo
 
-[Loom walkthrough — link to be added]
+[Loom walkthrough — link] 
+
+https://www.loom.com/share/f26e7deb84214472ad6b69734933ffb2
 
 The walkthrough shows the system running all 11 profiles end-to-end, including the edge cases, and demonstrates how the Gemini explanation layer changes the output compared to the raw reasons string.
+
+---
+
+## Portfolio
+
+**Code:** [github.com/DavidSong74/ai110-FINAL-project-1](https://github.com/DavidSong74/ai110-FINAL-project-1)
+
+What this project says about me as an AI engineer: I reach for observability before I reach for complexity. The recommender works in two layers — a deterministic scoring formula and a language model on top — and the first thing I built after getting both running was a way to tell them apart when something goes wrong. The log file, the validation test, the fallback to raw reasons: all of that exists because I wanted failures to be diagnosable, not just rare. Building the adversarial profiles taught me more about the system than the standard ones did. Finding that "calm" silently broke every lofi recommendation, or that a numerically precise ambient song outranked the only metal song in the catalog, wasn't embarrassing — it was the point. I'd rather surface that in testing than discover it matters to a user.
